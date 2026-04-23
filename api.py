@@ -95,3 +95,11 @@ def get_top_customers():
     totals = [row[1] for row in result]
         
     return {"names": names, "totals": totals}
+@app.get("/check_auth")
+def check_auth(password: str):
+    # เปลี่ยนรหัสผ่านตรงนี้ได้ตามใจชอบเลยครับ
+    SECRET_PASSWORD = "kiston-secure-99" 
+    if password == SECRET_PASSWORD:
+        return {"status": "success"}
+    else:
+        return {"status": "wrong"}

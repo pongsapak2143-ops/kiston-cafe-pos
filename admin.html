@@ -133,13 +133,18 @@
             }
         }
 
-        window.onload = function() {
-            let pass = prompt("กรุณากรอกรหัสผ่าน Admin:");
-            if (pass === "kiston123") {
-                loadStats();
+        window.onload = async function() {
+            let savedPass = localStorage.getItem("kiston_auth");
+            
+            // เช็คกับหลังบ้านว่ารหัสที่จำไว้ยังใช้ได้ไหม
+            let response = await fetch(`${API_URL}/check_auth?password=${savedPass}`);
+            let data = await response.json();
+
+            if (data.status === "success") {
+                loadStats(); // ถ้ารหัสถูก ให้โหลดข้อมูลกราฟ
             } else {
-                alert("รหัสไม่ถูกต้อง!");
-                window.location.href = "index.html";
+                // ถ้ารหัสผิดหรือไม่เคยล็อคอิน ให้เด้งไปหน้า login
+                window.location.href = "login.html";
             }
         };
     </script>

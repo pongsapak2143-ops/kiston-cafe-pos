@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kiston Admin Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #1a1a2e; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; }
+        .login-card { background: #16213e; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; border: 1px solid #0f3460; }
+        input { padding: 12px; border-radius: 8px; border: none; width: 100%; margin-bottom: 20px; box-sizing: border-box; }
+        button { background: #e94560; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>🔒 Admin Login</h2>
+        <input type="password" id="passInput" placeholder="กรอกรหัสผ่านเพื่อเข้าสู่ระบบ">
+        <button onclick="login()">เข้าสู่ระบบ</button>
+    </div>
+
+    <script>
+        async function login() {
+            let pass = document.getElementById("passInput").value;
+            // ส่งไปเช็คที่ Render (ห้ามเขียนรหัสไว้ในนี้นะครับ!)
+            let response = await fetch(`https://kiston-cafe.onrender.com/check_auth?password=${pass}`);
+            let data = await response.json();
+
+            if (data.status === "success") {
+                localStorage.setItem("kiston_auth", pass); // จำรหัสไว้ชั่วคราวในเบราว์เซอร์
+                window.location.href = "admin.html";
+            } else {
+                Swal.fire({ icon: 'error', title: 'รหัสผิด!', text: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้' });
+            }
+        }
+    </script>
+</body>
+</html>
