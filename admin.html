@@ -5,19 +5,14 @@
     <style>
         body { background-color: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; padding: 50px; }
         .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
-        .stat-card { 
-            background: #16213e; padding: 25px; border-radius: 20px; width: 200px; 
-            border: 1px solid #0f3460; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
+        .stat-card { background: #16213e; padding: 25px; border-radius: 20px; width: 200px; border: 1px solid #0f3460; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .stat-card h2 { color: #e94560; margin-bottom: 10px; font-size: 16px; }
         .stat-card p { font-size: 28px; font-weight: bold; margin: 0; color: #00d2ff; }
-        
         .search-section { background: #16213e; padding: 30px; border-radius: 20px; max-width: 600px; margin: 40px auto; border: 1px solid #0f3460; }
         input { padding: 12px; border-radius: 8px; border: none; width: 250px; margin-bottom: 10px; }
         button { background: #e94560; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { background: #ff4d6d; transform: scale(1.05); }
         .btn-search { background: #00d2ff; color: #1a1a2e; }
-        
         #historyResult { margin-top: 20px; padding: 15px; border-radius: 10px; background: #1a1a2e; min-height: 50px; line-height: 1.6; }
     </style>
 </head>
@@ -26,79 +21,7 @@
     <h1 style="margin-bottom: 40px;">📊 Kiston Cafe Dashboard</h1>
 
     <div class="container">
-        <div class="stat-card">
-            <h2>ลูกค้ารวม</h2>
-            <p id="total_customers">0</p>
-        </div>
-        <div class="stat-card">
-            <h2>รายได้รวม (บาท)</h2>
-            <p id="total_revenue">0</p>
-        </div>
-        <div class="stat-card">
-            <h2>แต้มที่แจกไป</h2>
-            <p id="total_points">0</p>
-        </div>
+        <div class="stat-card"><h2>ลูกค้ารวม</h2><p id="total_customers">0</p></div>
+        <div class="stat-card"><h2>รายได้รวม (บาท)</h2><p id="total_revenue">0</p></div>
+        <div class="stat-card"><h2>แต้มที่แจกไป</h2><p id="total_points">0</p></div>
     </div>
-
-    <button onclick="loadStats()">🔄 อัปเดตข้อมูลสรุป</button>
-
-    <div class="search-section">
-        <h2 style="color: #00d2ff; margin-top: 0;">🔍 ค้นหาประวัติสมาชิก</h2>
-        <input type="text" id="searchName" placeholder="พิมพ์ชื่อลูกค้าหรือเบอร์โทร">
-        <button class="btn-search" onclick="searchCustomer()">ค้นหา</button>
-        
-        <div id="historyResult">ใส่ชื่อลูกค้าแล้วกดค้นหาเพื่อดูประวัติ...</div>
-    </div>
-
-    <script>
-        // ฟังก์ชันโหลดข้อมูลสรุปยอด
-        async function loadStats() {
-            try {
-                let response = await fetch("https://kiston-cafe.onrender.com/summary");
-                let data = await response.json();
-
-                document.getElementById("total_customers").innerText = data.total_customers;
-                document.getElementById("total_revenue").innerText = data.total_revenue.toLocaleString();
-                document.getElementById("total_points").innerText = data.total_points_given;
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        // ฟังก์ชันค้นหาประวัติลูกค้ารายคน
-        async function searchCustomer() {
-            let name = document.getElementById("searchName").value;
-            if (name === "") return alert("กรุณาใส่ชื่อที่ต้องการค้นหา");
-            
-            try {
-                let response = await fetch(`https://kiston-cafe.onrender.com/history/${encodeURIComponent(name)}`);
-                let data = await response.json();
-                
-                if (data.visit_count === 0) {
-                    document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้ในระบบ";
-                } else {
-                    document.getElementById("historyResult").innerHTML = `
-                        ชื่อ: <b style="color:#00d2ff">${data.name}</b><br>
-                        ยอดซื้อสะสม: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท<br>
-                        แต้มรวม: <b style="color:#e94560">${data.total_points}</b> แต้ม | 
-                        มาใช้บริการ: <b>${data.visit_count}</b> ครั้ง
-                    `;
-                }
-            } catch (error) {
-                alert("ไม่สามารถดึงข้อมูลประวัติได้");
-            }
-        }
-
-        // เช็ครหัสผ่านตอนเข้าหน้าเว็บ
-        window.onload = function() {
-            let pass = prompt("กรุณากรอกรหัสผ่าน Admin:");
-            if (pass === "kiston123") {
-                loadStats();
-            } else {
-                alert("รหัสไม่ถูกต้อง!");
-                window.location.href = "index.html";
-            }
-        };
-    </script>
-</body>
-</html>
