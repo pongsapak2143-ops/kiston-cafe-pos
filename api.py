@@ -73,3 +73,11 @@ def get_customer_history(name: str):
         "total_points": result[2] or 0,
         "visit_count": result[3] or 0
     }
+@app.get("/reset")
+def reset_database():
+    conn = sqlite3.connect('kiston_cafe.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM sales")
+    conn.commit()
+    conn.close()
+    return {"message": "ล้างข้อมูลยอดขายทั้งหมดเรียบร้อยแล้ว!"}
