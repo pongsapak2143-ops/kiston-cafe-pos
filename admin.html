@@ -1,149 +1,125 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Kiston Admin Dashboard</title>
+    <title>Kiston Admin Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; padding: 20px; }
-        .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
-        .stat-card { background: #16213e; padding: 25px; border-radius: 20px; width: 200px; border: 1px solid #0f3460; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .stat-card h2 { color: #e94560; margin-bottom: 10px; font-size: 16px; }
-        .stat-card p { font-size: 28px; font-weight: bold; margin: 0; color: #00d2ff; }
-        .search-section, .chart-section { background: #16213e; padding: 30px; border-radius: 20px; max-width: 600px; margin: 20px auto; border: 1px solid #0f3460; }
-        input { padding: 12px; border-radius: 8px; border: none; width: 250px; margin-bottom: 10px; }
-        button { background: #e94560; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #ff4d6d; transform: scale(1.05); }
-        .btn-search { background: #00d2ff; color: #1a1a2e; }
-        #historyResult { margin-top: 20px; padding: 15px; border-radius: 10px; background: #1a1a2e; min-height: 50px; line-height: 1.6; }
+        .stat-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .card { background: #16213e; padding: 20px; border-radius: 15px; border: 1px solid #0f3460; min-width: 150px; }
+        .chart-box, .search-box { background: #16213e; padding: 25px; border-radius: 15px; max-width: 600px; margin: 20px auto; border: 1px solid #0f3460; }
+        button { background: #e94560; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
+        input { padding: 10px; border-radius: 5px; border: none; width: 60%; }
+        .btn-green { background: #28a745; }
+        .btn-red { background: #dc3545; }
+        .btn-blue { background: #00d2ff; color: #1a1a2e; }
     </style>
 </head>
 <body>
 
-    <h1 style="margin-bottom: 30px;">📊 Kiston Cafe Dashboard</h1>
+    <h1>📊 Kiston Cafe Pro Dashboard</h1>
 
-    <div class="container">
-        <div class="stat-card"><h2>ลูกค้ารวม</h2><p id="total_customers">0</p></div>
-        <div class="stat-card"><h2>รายได้รวม (บาท)</h2><p id="total_revenue">0</p></div>
-        <div class="stat-card"><h2>แต้มที่แจกไป</h2><p id="total_points">0</p></div>
+    <div class="stat-container">
+        <div class="card"><small>รายได้รวม</small><h2 id="total_revenue">0</h2></div>
+        <div class="card"><small>แต้มรวม</small><h2 id="total_points">0</h2></div>
     </div>
 
-    <button onclick="loadStats()">🔄 อัปเดตข้อมูล</button>
-    <button onclick="resetData()" style="background: #333; margin-left: 10px;">🗑️ ล้างยอดขายทั้งหมด</button>
+    <button onclick="loadAll()">🔄 อัปเดตข้อมูลทั้งหมด</button>
 
-    <div class="chart-section">
-        <h2 style="color: #00d2ff; margin-top: 0;">🏆 Top 5 ลูกค้า VIP ประจำร้าน</h2>
+    <div class="chart-box">
+        <h3>🏆 Top 5 ลูกค้า VIP</h3>
         <canvas id="vipChart"></canvas>
     </div>
 
-    <div class="search-section">
-        <h2 style="color: #00d2ff; margin-top: 0;">🔍 ค้นหาประวัติสมาชิก</h2>
-        <input type="text" id="searchName" placeholder="พิมพ์ชื่อลูกค้า">
-        <button class="btn-search" onclick="searchCustomer()">ค้นหา</button>
-        <div id="historyResult">ใส่ชื่อลูกค้าแล้วกดค้นหา...</div>
+    <div class="search-box">
+        <h3>🔍 จัดการสมาชิกรายคน</h3>
+        <input type="text" id="searchName" placeholder="พิมพ์ชื่อลูกค้า...">
+        <button class="btn-blue" onclick="searchCustomer()">ค้นหา</button>
+        
+        <div id="resultArea" style="margin-top:20px; padding:15px; background:#1a1a2e; border-radius:10px;">
+            ค้นหาชื่อลูกค้าเพื่อจัดการข้อมูล...
+        </div>
     </div>
 
     <script>
         const API_URL = "https://kiston-cafe.onrender.com";
-        let myChart; // ตัวแปรกราฟ
+        let myChart;
 
-        async function loadStats() {
-            try {
-                // ดึงข้อมูลสรุป
-                let response = await fetch(`${API_URL}/summary`);
-                let data = await response.json();
-                document.getElementById("total_customers").innerText = data.total_customers;
-                document.getElementById("total_revenue").innerText = data.total_revenue.toLocaleString();
-                document.getElementById("total_points").innerText = data.total_points_given;
-                
-                // โหลดกราฟต่อเลย
-                loadChart();
-            } catch (error) {
-                console.error(error);
-            }
+        // ฟังก์ชันโหลดทุกอย่าง
+        async function loadAll() {
+            // โหลดตัวเลขสรุป
+            let res1 = await fetch(`${API_URL}/summary`);
+            let data1 = await res1.json();
+            document.getElementById("total_revenue").innerText = data1.total_revenue.toLocaleString();
+            document.getElementById("total_points").innerText = data1.total_points_given;
+
+            // โหลดกราฟ
+            let res2 = await fetch(`${API_URL}/top`);
+            let data2 = await res2.json();
+            const ctx = document.getElementById('vipChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data2.names,
+                    datasets: [{ label: 'ยอดเปย์ (บาท)', data: data2.totals, backgroundColor: '#e94560' }]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
         }
 
-        async function loadChart() {
-            try {
-                let response = await fetch(`${API_URL}/top`);
-                let data = await response.json();
-                
-                let ctx = document.getElementById('vipChart').getContext('2d');
-                
-                // ลบกราฟเก่าทิ้งก่อนถ้าวาดซ้ำ
-                if(myChart) myChart.destroy(); 
-
-                // วาดกราฟใหม่
-                myChart = new Chart(ctx, {
-                    type: 'bar', // เปลี่ยนเป็น 'pie' ได้ถ้าอยากได้กราฟวงกลม!
-                    data: {
-                        labels: data.names,
-                        datasets: [{
-                            label: 'ยอดเปย์รวม (บาท)',
-                            data: data.totals,
-                            backgroundColor: '#e94560',
-                            borderRadius: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: 'white' } },
-                            x: { grid: { color: '#333' }, ticks: { color: 'white' } }
-                        },
-                        plugins: {
-                            legend: { labels: { color: 'white' } }
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        async function resetData() {
-            if (confirm("แน่ใจนะว่าจะล้างข้อมูลทั้งหมด?")) {
-                try {
-                    let response = await fetch(`${API_URL}/reset`);
-                    let data = await response.json();
-                    alert(data.message);
-                    loadStats(); 
-                } catch (error) {
-                    alert("ติดต่อหลังบ้านไม่ได้จ้า!");
-                }
-            }
-        }
-
+        // ฟังก์ชันค้นหาและสร้างปุ่ม แก้ไข/ลบ
         async function searchCustomer() {
             let name = document.getElementById("searchName").value;
-            if (name === "") return alert("กรุณาใส่ชื่อที่ต้องการค้นหา");
-            try {
-                let response = await fetch(`${API_URL}/history/${encodeURIComponent(name)}`);
-                let data = await response.json();
-                if (data.visit_count === 0) {
-                    document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้";
-                } else {
-                    document.getElementById("historyResult").innerHTML = `
-                        ชื่อ: <b style="color:#00d2ff">${data.name}</b><br>
-                        ยอดซื้อ: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท | 
-                        แต้ม: <b style="color:#e94560">${data.total_points}</b>
-                    `;
-                }
-            } catch (error) {
-                alert("เกิดข้อผิดพลาด");
+            if(!name) return;
+            
+            let res = await fetch(`${API_URL}/history/${encodeURIComponent(name)}`);
+            let data = await res.json();
+
+            if(data.visit_count === 0) {
+                document.getElementById("resultArea").innerHTML = "❌ ไม่พบลูกค้านี้";
+            } else {
+                // สร้างหน้าต่างจัดการที่มีปุ่ม แจกแต้ม และ ลบ
+                document.getElementById("resultArea").innerHTML = `
+                    <b>คุณ ${data.name}</b> | แต้มปัจจุบัน: <span style="color:#e94560">${data.total_points}</span><br><br>
+                    <button class="btn-green" onclick="managePoints('${data.name}', 50)">+ แจก 50 แต้ม</button>
+                    <button class="btn-red" onclick="deleteMember('${data.name}')">🗑️ ลบสมาชิก</button>
+                `;
             }
         }
 
-        window.onload = async function() {
-            let savedPass = localStorage.getItem("kiston_auth");
-            
-            // เช็คกับหลังบ้านว่ารหัสที่จำไว้ยังใช้ได้ไหม
-            let response = await fetch(`${API_URL}/check_auth?password=${savedPass}`);
-            let data = await response.json();
+        // ฟังก์ชันสั่งหลังบ้านให้เพิ่มแต้ม
+        async function managePoints(name, pts) {
+            await fetch(`${API_URL}/add_points/${encodeURIComponent(name)}/${pts}`);
+            Swal.fire('สำเร็จ!', `เพิ่มแต้มให้คุณ ${name} แล้ว`, 'success');
+            searchCustomer(); // อัปเดตหน้าจอค้นหา
+            loadAll(); // อัปเดตกราฟ
+        }
 
-            if (data.status === "success") {
-                loadStats(); // ถ้ารหัสถูก ให้โหลดข้อมูลกราฟ
+        // ฟังก์ชันสั่งหลังบ้านให้ลบชื่อ
+        async function deleteMember(name) {
+            const confirm = await Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: `ข้อมูลของคุณ ${name} จะหายถาวร!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'ลบเลย!'
+            });
+
+            if (confirm.isConfirmed) {
+                await fetch(`${API_URL}/delete_customer/${encodeURIComponent(name)}`);
+                Swal.fire('ลบแล้ว!', '', 'success');
+                document.getElementById("resultArea").innerHTML = "ลบข้อมูลเรียบร้อย";
+                loadAll();
+            }
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem("kiston_auth") === "kiston-secure-99") {
+                loadAll();
             } else {
-                // ถ้ารหัสผิดหรือไม่เคยล็อคอิน ให้เด้งไปหน้า login
                 window.location.href = "login.html";
             }
         };

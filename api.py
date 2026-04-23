@@ -103,3 +103,23 @@ def check_auth(password: str):
         return {"status": "success"}
     else:
         return {"status": "wrong"}
+# ฟังก์ชันสำหรับบวกแต้มเพิ่มให้ลูกค้า (แจกแต้มฟรี)
+@app.get("/add_points/{name}/{points}")
+def add_points(name: str, points: int):
+    conn = sqlite3.connect('kiston_cafe.db')
+    c = conn.cursor()
+    # เราจะจำลองยอดซื้อ 0 บาท แต่เพิ่มแต้มให้ตามที่ระบุ
+    c.execute("INSERT INTO sales (customer_name, price, points) VALUES (?, ?, ?)", (name, 0, points))
+    conn.commit()
+    conn.close()
+    return {"message": f"เพิ่ม {points} แต้มให้คุณ {name} เรียบร้อย!"}
+
+# ฟังก์ชันสำหรับลบข้อมูลลูกค้าคนนั้นทิ้งทั้งหมด
+@app.get("/delete_customer/{name}")
+def delete_customer(name: str):
+    conn = sqlite3.connect('kiston_cafe.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM sales WHERE customer_name = ?", (name,))
+    conn.commit()
+    conn.close()
+    return {"message": f"ลบข้อมูลของคุณ {name} ออกจากระบบแล้ว"}
