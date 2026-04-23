@@ -157,8 +157,21 @@
             let savedPass = localStorage.getItem("kiston_auth");
             let response = await fetch(`${API_URL}/check_auth?password=${savedPass}`);
             let data = await response.json();
-            if (data.status === "success") { loadStats(); } 
-            else { window.location.href = "login.html"; }
+
+            if (data.status === "success") {
+                loadStats();
+
+                // 🌟 เพิ่มโค้ดส่วนนี้: นักสืบอ่านชื่อจาก URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const searchName = urlParams.get('search');
+                if (searchName) {
+                    document.getElementById("searchName").value = searchName;
+                    searchCustomer(); // สั่งให้ค้นหาทันทีที่สแกนมา!
+                }
+
+            } else {
+                window.location.href = "login.html";
+            }
         };
     </script>
 </body>
