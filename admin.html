@@ -48,14 +48,12 @@
 
         async function loadStats() {
             try {
-                // ดึงข้อมูลสรุป
                 let response = await fetch(`${API_URL}/summary`);
                 let data = await response.json();
                 document.getElementById("total_customers").innerText = data.total_customers;
                 document.getElementById("total_revenue").innerText = data.total_revenue.toLocaleString();
                 document.getElementById("total_points").innerText = data.total_points_given;
                 
-                // โหลดกราฟต่อเลย
                 loadChart();
             } catch (error) {
                 console.error(error);
@@ -66,15 +64,10 @@
             try {
                 let response = await fetch(`${API_URL}/top`);
                 let data = await response.json();
-                
                 let ctx = document.getElementById('vipChart').getContext('2d');
-                
-                // ลบกราฟเก่าทิ้งก่อนถ้าวาดซ้ำ
                 if(myChart) myChart.destroy(); 
-
-                // วาดกราฟใหม่
                 myChart = new Chart(ctx, {
-                    type: 'bar', // เปลี่ยนเป็น 'pie' ได้ถ้าอยากได้กราฟวงกลม!
+                    type: 'bar',
                     data: {
                         labels: data.names,
                         datasets: [{
@@ -119,20 +112,8 @@
             try {
                 let response = await fetch(`${API_URL}/history/${encodeURIComponent(name)}`);
                 let data = await response.json();
+                
                 if (data.visit_count === 0) {
-                    document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้";
-                } else {
-                    document.getElementById("historyResult").innerHTML = `
-                        ชื่อ: <b style="color:#00d2ff">${data.name}</b><br>
-                        ยอดซื้อ: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท | 
-                        แต้ม: <b style="color:#e94560">${data.total_points}</b>
-                    `;
-                }
-            } catch (error) {
-                alert("เกิดข้อผิดพลาด");
-            }
-        }
-        if (data.visit_count === 0) {
                     document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้";
                 } else {
                     document.getElementById("historyResult").innerHTML = `
@@ -140,39 +121,43 @@
                         ยอดซื้อ: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท | 
                         แต้ม: <b style="color:#e94560">${data.total_points}</b><br><br>
                         
-                        <button onclick="giveFreePoints('${data.name}')" style="background:#28a745; padding:5px 10px; font-size:12px;">+ แจก 50 แต้ม</button>
+                        <button onclick="giveFreePoints('${data.name}')" style="background:#28a745; padding:5px 10px; font-size:12px; margin-bottom:5px;">+ แจก 50 แต้ม</button>
                         <button onclick="removeCustomer('${data.name}')" style="background:#dc3545; padding:5px 10px; font-size:12px; margin-left:10px;">🗑️ ลบลูกค้านี้</button>
                     `;
                 }
+            } catch (error) {
+                alert("เกิดข้อผิดพลาด");
+            }
+        }
+
+        // ฟังก์ชันแจกแต้มฟรี
         async function giveFreePoints(name) {
             if(confirm(`ยืนยันแจกแต้มฟรี 50 แต้มให้คุณ ${name}?`)) {
                 await fetch(`${API_URL}/add_points/${encodeURIComponent(name)}/50`);
                 alert("แจกแต้มสำเร็จ!");
-                searchCustomer(); // โหลดข้อมูลใหม่เพื่อดูแต้มที่เพิ่มขึ้น
-                loadStats(); // อัปเดตกราฟและยอดรวมด้วย
+                searchCustomer(); 
+                loadStats(); 
             }
         }
 
+        // ฟังก์ชันลบลูกค้า
         async function removeCustomer(name) {
             if(confirm(`❗ ยืนยันการลบข้อมูลทั้งหมดของคุณ ${name}? (กู้คืนไม่ได้นะ)`)) {
                 await fetch(`${API_URL}/delete_customer/${encodeURIComponent(name)}`);
                 alert("ลบข้อมูลเรียบร้อย");
                 document.getElementById("historyResult").innerHTML = "ใส่ชื่อลูกค้าแล้วกดค้นหา...";
-                loadStats(); // อัปเดตกราฟใหม่ ลูกค้าคนนั้นจะหายไปจากกราฟทันที!
+                loadStats(); 
             }
         }
 
         window.onload = async function() {
             let savedPass = localStorage.getItem("kiston_auth");
-            
-            // เช็คกับหลังบ้านว่ารหัสที่จำไว้ยังใช้ได้ไหม
             let response = await fetch(`${API_URL}/check_auth?password=${savedPass}`);
             let data = await response.json();
 
             if (data.status === "success") {
-                loadStats(); // ถ้ารหัสถูก ให้โหลดข้อมูลกราฟ
+                loadStats();
             } else {
-                // ถ้ารหัสผิดหรือไม่เคยล็อคอิน ให้เด้งไปหน้า login
                 window.location.href = "login.html";
             }
         };
