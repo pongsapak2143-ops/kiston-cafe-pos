@@ -13,7 +13,6 @@
         input, button { margin: 10px; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
         button { background-color: #8e24aa; color: white; cursor: pointer; border: none; font-weight: bold; }
         
-        /* 🌟 สเต็ป 2.1: เพิ่มสีฟ้าให้ปุ่มสมาชิก */
         .btn-member { 
             background-color: #00d2ff !important; 
             color: #1a1a2e !important; 
@@ -35,7 +34,6 @@
         <input type="number" id="moneyInput" placeholder="ยอดเงิน (บาท)"><br>
         
         <button onclick="calculateAndShow()">คำนวณแต้ม</button>
-        
         <br>
         <button class="btn-member" onclick="showMemberCard()">บัตรสมาชิก / เช็คแต้ม 💳</button>
     </div>
@@ -54,20 +52,15 @@
         async function calculateAndShow() {
             let name = document.getElementById("nameInput").value || "Guest";
             let price = document.getElementById("moneyInput").value;
-            
             if (price <= 0) return Swal.fire('ลืมใส่เงิน!', 'กรุณากรอกยอดเงินด้วยครับ', 'warning');
-
             Swal.showLoading();
-
             try {
                 let response = await fetch(`https://kiston-cafe.onrender.com/calculate/${encodeURIComponent(name)}/${price}`);
                 let data = await response.json();
-
                 document.getElementById("rec-name").innerText = data.name;
                 document.getElementById("rec-price").innerText = price;
                 document.getElementById("rec-points").innerText = data.points;
                 document.getElementById("rec-date").innerText = new Date().toLocaleString();
-
                 Swal.fire({
                     icon: 'success',
                     title: 'สะสมแต้มสำเร็จ!',
@@ -76,23 +69,14 @@
                     confirmButtonText: 'รับใบเสร็จ 🎫',
                     cancelButtonText: 'ปิด',
                     confirmButtonColor: '#8e24aa'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        generateImage();
-                    }
-                });
-
+                }).then((result) => { if (result.isConfirmed) generateImage(); });
                 document.getElementById("moneyInput").value = "";
-
-            } catch (e) {
-                Swal.fire('Error', 'ติดต่อหลังบ้านไม่ได้', 'error');
-            }
+            } catch (e) { Swal.fire('Error', 'ติดต่อหลังบ้านไม่ได้', 'error'); }
         }
 
         function generateImage() {
             const receipt = document.getElementById("receipt-template");
             receipt.style.left = "0";
-            
             html2canvas(receipt).then(canvas => {
                 const imgData = canvas.toDataURL("image/png");
                 Swal.fire({
@@ -108,16 +92,11 @@
         async function showMemberCard() {
             let name = document.getElementById("nameInput").value;
             if (!name) return Swal.fire('ใส่ชื่อก่อน!', 'กรุณาพิมพ์ชื่อของคุณเพื่อดูบัตรสมาชิก', 'warning');
-
             Swal.showLoading();
-
             try {
                 let response = await fetch(`https://kiston-cafe.onrender.com/history/${encodeURIComponent(name)}`);
                 let data = await response.json();
-
-                if (data.visit_count === 0) {
-                    return Swal.fire('ไม่พบข้อมูล', 'คุณยังไม่มีประวัติการซื้อในร้านเราครับ', 'info');
-                }
+                if (data.visit_count === 0) return Swal.fire('ไม่พบข้อมูล', 'คุณยังไม่มีประวัติการซื้อครับ', 'info');
 
                 Swal.fire({
                     title: `บัตรสมาชิก Kiston VIP`,
@@ -132,17 +111,15 @@
                     `,
                     confirmButtonText: 'ปิด',
                     didOpen: () => {
+                        // 🌟 เปลี่ยนจุดหมาย QR Code ไปที่หน้า member.html แทน admin.html
                         new QRCode(document.getElementById("qrcode_area"), {
-                            text: `https://kiston-cafe-pos-mkf8.vercel.app/admin.html?search=${name}`,
+                            text: `https://kiston-cafe-pos-mkf8.vercel.app/member.html?name=${encodeURIComponent(name)}`,
                             width: 128,
                             height: 128
                         });
                     }
                 });
-
-            } catch (e) {
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
-            }
+            } catch (e) { Swal.fire('Error', 'เชื่อมต่อไม่ได้', 'error'); }
         }
     </script>
 </body>
