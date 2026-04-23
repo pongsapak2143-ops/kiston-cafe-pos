@@ -81,3 +81,17 @@ def reset_database():
     conn.commit()
     conn.close()
     return {"message": "ล้างข้อมูลยอดขายทั้งหมดเรียบร้อยแล้ว!"}
+@app.get("/top")
+def get_top_customers():
+    conn = sqlite3.connect('kiston_cafe.db')
+    c = conn.cursor()
+    # สั่งให้จัดอันดับลูกค้า 5 คนแรกที่ซื้อของเยอะที่สุด
+    c.execute("SELECT customer_name, SUM(price) FROM sales GROUP BY customer_name ORDER BY SUM(price) DESC LIMIT 5")
+    result = c.fetchall()
+    conn.close()
+    
+    # แยกชื่อ กับ ยอดเงิน เพื่อส่งไปให้กราฟวาด
+    names = [row[0] for row in result]
+    totals = [row[1] for row in result]
+        
+    return {"names": names, "totals": totals}
