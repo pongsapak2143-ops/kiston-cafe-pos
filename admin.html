@@ -25,3 +25,77 @@
         <div class="stat-card"><h2>รายได้รวม (บาท)</h2><p id="total_revenue">0</p></div>
         <div class="stat-card"><h2>แต้มที่แจกไป</h2><p id="total_points">0</p></div>
     </div>
+
+    <button onclick="loadStats()">🔄 อัปเดตข้อมูลสรุป</button>
+    <button onclick="resetData()" style="background: #333; margin-left: 10px;">🗑️ ล้างยอดขายทั้งหมด</button>
+
+    <div class="search-section">
+        <h2 style="color: #00d2ff; margin-top: 0;">🔍 ค้นหาประวัติสมาชิก</h2>
+        <input type="text" id="searchName" placeholder="พิมพ์ชื่อลูกค้าหรือเบอร์โทร">
+        <button class="btn-search" onclick="searchCustomer()">ค้นหา</button>
+        <div id="historyResult">ใส่ชื่อลูกค้าแล้วกดค้นหาเพื่อดูประวัติ...</div>
+    </div>
+
+    <script>
+        const API_URL = "https://kiston-cafe.onrender.com";
+
+        async function loadStats() {
+            try {
+                let response = await fetch(`${API_URL}/summary`);
+                let data = await response.json();
+                document.getElementById("total_customers").innerText = data.total_customers;
+                document.getElementById("total_revenue").innerText = data.total_revenue.toLocaleString();
+                document.getElementById("total_points").innerText = data.total_points_given;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function resetData() {
+            if (confirm("คุณแน่ใจนะว่าจะล้างข้อมูลทั้งหมด? ยอดเงินจะหายวับไปเลยนะ!")) {
+                try {
+                    let response = await fetch(`${API_URL}/reset`);
+                    let data = await response.json();
+                    alert(data.message);
+                    loadStats(); 
+                } catch (error) {
+                    alert("ติดต่อหลังบ้านไม่ได้จ้า!");
+                }
+            }
+        }
+
+        async function searchCustomer() {
+            let name = document.getElementById("searchName").value;
+            if (name === "") return alert("กรุณาใส่ชื่อที่ต้องการค้นหา");
+            
+            try {
+                let response = await fetch(`${API_URL}/history/${encodeURIComponent(name)}`);
+                let data = await response.json();
+                
+                if (data.visit_count === 0) {
+                    document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้ในระบบ";
+                } else {
+                    document.getElementById("historyResult").innerHTML = `
+                        ชื่อ: <b style="color:#00d2ff">${data.name}</b><br>
+                        ยอดซื้อสะสม: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท<br>
+                        แต้มรวม: <b style="color:#e94560">${data.total_points}</b> แต้ม | 
+                        มาใช้บริการ: <b>${data.visit_count}</b> ครั้ง
+                    `;
+                }
+            } catch (error) {
+                alert("ไม่สามารถดึงข้อมูลประวัติได้");
+            }
+        }
+
+        window.onload = function() {
+            let pass = prompt("กรุณากรอกรหัสผ่าน Admin:");
+            if (pass === "kiston123") {
+                loadStats();
+            } else {
+                alert("รหัสไม่ถูกต้อง!");
+                window.location.href = "index.html";
+            }
+        };
+    </script>
+</body>
+</html>
