@@ -1,59 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
+    <meta charset="UTF-8">
+    <title>Kiston Cafe POS</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #f3e5f5; font-family: 'Tahoma', sans-serif; text-align: center; padding: 50px; }
-        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); display: inline-block; }
-        input { padding: 10px; font-size: 16px; width: 200px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #6a1b9a; color: white; padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
-        button:hover { background: #8e24aa; }
-        
-        /* สร้างกล่องข้อความสีเขียวไว้โชว์ผลลัพธ์ */
-        #result { margin-top: 20px; font-size: 20px; font-weight: bold; color: #2e7d32; }
+        body {
+            background-color: #f3e5f5;
+            font-family: 'Tahoma', sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+            display: inline-block;
+        }
+        input, button {
+            margin: 10px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #8e24aa;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #6a1b9a;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
 
     <div class="card">
-    <h1 style="color: #4a148c;">☕ Kiston Cafe POS</h1>
-    <p>กรุณากรอกข้อมูลเพื่อสะสมแต้ม</p>
-    
-    <input type="text" id="nameInput" placeholder="ชื่อลูกค้า / เบอร์โทร">
-    <br><br>
-    
-    <input type="number" id="moneyInput" placeholder="ยอดเงิน (บาท)">
-    <br>
-    
-    <button onclick="calculateAndShow()">คำนวณแต้ม</button>
-    <div id="result"></div>
-</div>
-<script>
-        // 🌟 ใส่ async ไว้ตรงนี้เรียบร้อยแล้ว
+        <h2>☕ Kiston Cafe POS</h2>
+        <p>กรุณากรอกข้อมูลเพื่อสะสมแต้ม</p>
+        
+        <input type="text" id="nameInput" placeholder="ชื่อลูกค้า / เบอร์โทร"><br>
+        <input type="number" id="moneyInput" placeholder="ยอดเงิน (บาท)"><br>
+        
+        <button onclick="calculateAndShow()">คำนวณแต้ม</button>
+    </div>
+
+    <script>
         async function calculateAndShow() {
             let name = document.getElementById("nameInput").value;
             let price = document.getElementById("moneyInput").value;
             
             if (name === "") name = "Guest";
             if (price <= 0 || price === "") {
-                alert("กรุณากรอกยอดเงินครับ!");
+                // 🌟 โชว์แจ้งเตือนแบบสวยๆ เมื่อลืมกรอกเงิน
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'เดี๋ยวก่อน!',
+                    text: 'กรุณากรอกยอดเงินให้ถูกต้องครับ',
+                    confirmButtonColor: '#8e24aa'
+                });
                 return;
             }
 
+            // 🌟 โชว์แอนิเมชันวงกลมหมุนๆ ระหว่างรอ Render ประมวลผล
+            Swal.fire({
+                title: 'กำลังคิดเงิน...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+
             try {
                 let safeName = encodeURIComponent(name);
-                // 🌟 ลิงก์ไปที่ Render แล้ว
                 let response = await fetch(`https://kiston-cafe.onrender.com/calculate/${safeName}/${price}`);
                 
                 if (!response.ok) throw new Error("Server error");
 
                 let data = await response.json();
 
-                document.getElementById("result").innerHTML = 
-                    "ลูกค้าคุณ: <b>" + data.name + "</b><br>" +
-                    "ยอดซื้อ " + price + " บาท <br> 🎉 ได้รับ <b>" + data.points + "</b> แต้ม!";
+                // 🌟 ปิดตัวโหลด แล้วโชว์ผลลัพธ์แบบอลังการพร้อมเครื่องหมายถูก!
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สะสมแต้มสำเร็จ! 🎉',
+                    html: `ลูกค้า: <b>${data.name}</b><br>
+                           ยอดซื้อ ${price} บาท <br> 
+                           ได้รับ <b style="color: #8e24aa; font-size: 20px;">${data.points}</b> แต้ม!`,
+                    confirmButtonColor: '#8e24aa'
+                });
+
+                // ทำความสะอาดช่องกรอกข้อมูลอัตโนมัติ เพื่อเตรียมรับลูกค้าคนต่อไป
+                document.getElementById("nameInput").value = "";
+                document.getElementById("moneyInput").value = "";
+
             } catch (error) {
                 console.error(error);
-                alert("ติดต่อหลังบ้านไม่ได้! เช็คดูว่า uvicorn ยังรันอยู่ไหม หรือ Render อาจจะกำลังตื่นนอน");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ระบบมีปัญหา',
+                    text: 'ติดต่อหลังบ้านไม่ได้! เช็คดูว่า Render อาจจะกำลังตื่นนอน',
+                    confirmButtonColor: '#8e24aa'
+                });
             }
         }
     </script>
