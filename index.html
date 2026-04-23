@@ -4,110 +4,99 @@
     <meta charset="UTF-8">
     <title>Kiston Cafe POS</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
-        body {
-            background-color: #f3e5f5;
-            font-family: 'Tahoma', sans-serif;
-            text-align: center;
-            padding: 50px;
+        body { background-color: #f3e5f5; font-family: 'Tahoma', sans-serif; text-align: center; padding: 50px; }
+        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); display: inline-block; }
+        input, button { margin: 10px; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; }
+        button { background-color: #8e24aa; color: white; cursor: pointer; border: none; font-weight: bold; }
+        
+        /* สไตล์หน้าตาใบเสร็จ (เราจะซ่อนไว้ก่อน) */
+        #receipt-template {
+            width: 250px; padding: 20px; background: white; color: black;
+            font-family: 'Courier New', sans-serif; text-align: center;
+            border: 1px solid #ddd; position: absolute; left: -9999px;
         }
-        .card {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
-            display: inline-block;
-        }
-        input, button {
-            margin: 10px;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background-color: #8e24aa;
-            color: white;
-            cursor: pointer;
-            border: none;
-            transition: 0.3s;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #6a1b9a;
-            transform: scale(1.05);
-        }
+        .line { border-top: 1px dashed #000; margin: 10px 0; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h2>☕ Kiston Cafe POS</h2>
-        <p>กรุณากรอกข้อมูลเพื่อสะสมแต้ม</p>
-        
-        <input type="text" id="nameInput" placeholder="ชื่อลูกค้า / เบอร์โทร"><br>
+        <input type="text" id="nameInput" placeholder="ชื่อลูกค้า">
         <input type="number" id="moneyInput" placeholder="ยอดเงิน (บาท)"><br>
-        
         <button onclick="calculateAndShow()">คำนวณแต้ม</button>
+    </div>
+
+    <div id="receipt-template">
+        <h3 style="margin:0;">KISTON CAFE</h3>
+        <div class="line"></div>
+        <p>ชื่อ: <span id="rec-name"></span></p>
+        <p>ยอดซื้อ: <span id="rec-price"></span> บาท</p>
+        <h2 style="margin: 10px 0;">+ <span id="rec-points"></span> แต้ม</h2>
+        <div class="line"></div>
+        <p style="font-size: 10px;" id="rec-date"></p>
     </div>
 
     <script>
         async function calculateAndShow() {
-            let name = document.getElementById("nameInput").value;
+            let name = document.getElementById("nameInput").value || "Guest";
             let price = document.getElementById("moneyInput").value;
             
-            if (name === "") name = "Guest";
-            if (price <= 0 || price === "") {
-                // 🌟 โชว์แจ้งเตือนแบบสวยๆ เมื่อลืมกรอกเงิน
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'เดี๋ยวก่อน!',
-                    text: 'กรุณากรอกยอดเงินให้ถูกต้องครับ',
-                    confirmButtonColor: '#8e24aa'
-                });
-                return;
-            }
+            if (price <= 0) return Swal.fire('ลืมใส่เงิน!', 'กรุณากรอกยอดเงินด้วยครับ', 'warning');
 
-            // 🌟 โชว์แอนิเมชันวงกลมหมุนๆ ระหว่างรอ Render ประมวลผล
-            Swal.fire({
-                title: 'กำลังคิดเงิน...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading()
-                }
-            });
+            Swal.showLoading(); // โชว์ตัวหมุนรอ
 
             try {
-                let safeName = encodeURIComponent(name);
-                let response = await fetch(`https://kiston-cafe.onrender.com/calculate/${safeName}/${price}`);
-                
-                if (!response.ok) throw new Error("Server error");
-
+                let response = await fetch(`https://kiston-cafe.onrender.com/calculate/${encodeURIComponent(name)}/${price}`);
                 let data = await response.json();
 
-                // 🌟 ปิดตัวโหลด แล้วโชว์ผลลัพธ์แบบอลังการพร้อมเครื่องหมายถูก!
+                // 1. ใส่ข้อมูลรอไว้ในใบเสร็จที่แอบอยู่
+                document.getElementById("rec-name").innerText = data.name;
+                document.getElementById("rec-price").innerText = price;
+                document.getElementById("rec-points").innerText = data.points;
+                document.getElementById("rec-date").innerText = new Date().toLocaleString();
+
+                // 2. ถามว่าเอาใบเสร็จไหม
                 Swal.fire({
                     icon: 'success',
-                    title: 'สะสมแต้มสำเร็จ! 🎉',
-                    html: `ลูกค้า: <b>${data.name}</b><br>
-                           ยอดซื้อ ${price} บาท <br> 
-                           ได้รับ <b style="color: #8e24aa; font-size: 20px;">${data.points}</b> แต้ม!`,
+                    title: 'สะสมแต้มสำเร็จ!',
+                    text: `คุณได้รับ ${data.points} แต้ม`,
+                    showCancelButton: true,
+                    confirmButtonText: 'รับใบเสร็จ 🎫',
+                    cancelButtonText: 'ปิด',
                     confirmButtonColor: '#8e24aa'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        generateImage(); // ถ้าตกลง ให้เริ่มถ่ายรูปใบเสร็จ
+                    }
                 });
 
-                // ทำความสะอาดช่องกรอกข้อมูลอัตโนมัติ เพื่อเตรียมรับลูกค้าคนต่อไป
                 document.getElementById("nameInput").value = "";
                 document.getElementById("moneyInput").value = "";
 
-            } catch (error) {
-                console.error(error);
+            } catch (e) {
+                Swal.fire('Error', 'ติดต่อหลังบ้านไม่ได้', 'error');
+            }
+        }
+
+        // ฟังก์ชันถ่ายรูปใบเสร็จ
+        function generateImage() {
+            const receipt = document.getElementById("receipt-template");
+            receipt.style.left = "0"; // ดึงออกมาให้เห็นชั่วคราวเพื่อถ่ายรูป
+            
+            html2canvas(receipt).then(canvas => {
+                const imgData = canvas.toDataURL("image/png");
                 Swal.fire({
-                    icon: 'error',
-                    title: 'ระบบมีปัญหา',
-                    text: 'ติดต่อหลังบ้านไม่ได้! เช็คดูว่า Render อาจจะกำลังตื่นนอน',
+                    title: 'ใบเสร็จของคุณ',
+                    imageUrl: imgData,
+                    text: 'กดค้างที่รูปเพื่อบันทึกภาพ',
                     confirmButtonColor: '#8e24aa'
                 });
-            }
+                receipt.style.left = "-9999px"; // ถ่ายเสร็จแล้วซ่อนกลับที่เดิม
+            });
         }
     </script>
 </body>
