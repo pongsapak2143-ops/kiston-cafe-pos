@@ -123,3 +123,15 @@ def delete_customer(name: str):
     conn.commit()
     conn.close()
     return {"message": f"ลบข้อมูลของคุณ {name} ออกจากระบบแล้ว"}
+@app.get("/all_sales")
+def get_all_sales():
+    conn = sqlite3.connect('kiston_cafe.db')
+    # ใช้ row_factory เพื่อให้ผลลัพธ์ออกมาเป็นชื่อคอลัมน์ (ง่ายต่อการทำ Excel)
+    conn.row_factory = sqlite3.Row 
+    c = conn.cursor()
+    c.execute("SELECT id, customer_name, price, points, timestamp FROM sales ORDER BY timestamp DESC")
+    rows = c.fetchall()
+    conn.close()
+    
+    # แปลงข้อมูลจากฐานข้อมูลเป็น List ของ Dict
+    return [dict(row) for row in rows]

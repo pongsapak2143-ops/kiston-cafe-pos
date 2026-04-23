@@ -3,6 +3,7 @@
 <head>
     <title>Kiston Admin Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { background-color: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; padding: 20px; }
         .container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -28,6 +29,7 @@
     </div>
 
     <button onclick="loadStats()">🔄 อัปเดตข้อมูล</button>
+    <button onclick="exportToExcel()" style="background: #28a745; margin-left: 10px;">📊 ดาวน์โหลดรายงาน (Excel)</button>
     <button onclick="resetData()" style="background: #333; margin-left: 10px;">🗑️ ล้างยอดขายทั้งหมด</button>
 
     <div class="chart-section">
@@ -44,7 +46,7 @@
 
     <script>
         const API_URL = "https://kiston-cafe.onrender.com";
-        let myChart; // ตัวแปรกราฟ
+        let myChart;
 
         async function loadStats() {
             try {
@@ -53,11 +55,8 @@
                 document.getElementById("total_customers").innerText = data.total_customers;
                 document.getElementById("total_revenue").innerText = data.total_revenue.toLocaleString();
                 document.getElementById("total_points").innerText = data.total_points_given;
-                
                 loadChart();
-            } catch (error) {
-                console.error(error);
-            }
+            } catch (error) { console.error(error); }
         }
 
         async function loadChart() {
@@ -83,13 +82,26 @@
                             y: { beginAtZero: true, grid: { color: '#333' }, ticks: { color: 'white' } },
                             x: { grid: { color: '#333' }, ticks: { color: 'white' } }
                         },
-                        plugins: {
-                            legend: { labels: { color: 'white' } }
-                        }
+                        plugins: { legend: { labels: { color: 'white' } } }
                     }
                 });
+            } catch (error) { console.error(error); }
+        }
+
+        // 🌟 3. เพิ่มฟังก์ชันสำหรับสั่งโหลดไฟล์ Excel
+        async function exportToExcel() {
+            try {
+                let response = await fetch(`${API_URL}/all_sales`);
+                let data = await response.json();
+
+                if (data.length === 0) return alert("ไม่มีข้อมูลยอดขายให้ส่งออกครับ");
+
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "ยอดขาย Kiston Cafe");
+                XLSX.writeFile(workbook, "Kiston_Cafe_Report.xlsx");
             } catch (error) {
-                console.error(error);
+                alert("เกิดข้อผิดพลาด: อย่าลืมอัปเดตไฟล์ api.py ใน GitHub ด้วยนะ!");
             }
         }
 
@@ -100,9 +112,7 @@
                     let data = await response.json();
                     alert(data.message);
                     loadStats(); 
-                } catch (error) {
-                    alert("ติดต่อหลังบ้านไม่ได้จ้า!");
-                }
+                } catch (error) { alert("ติดต่อหลังบ้านไม่ได้จ้า!"); }
             }
         }
 
@@ -112,7 +122,6 @@
             try {
                 let response = await fetch(`${API_URL}/history/${encodeURIComponent(name)}`);
                 let data = await response.json();
-                
                 if (data.visit_count === 0) {
                     document.getElementById("historyResult").innerHTML = "❌ ไม่พบข้อมูลลูกค้านี้";
                 } else {
@@ -120,27 +129,21 @@
                         ชื่อ: <b style="color:#00d2ff">${data.name}</b><br>
                         ยอดซื้อ: <b style="color:#00d2ff">${data.total_spent.toLocaleString()}</b> บาท | 
                         แต้ม: <b style="color:#e94560">${data.total_points}</b><br><br>
-                        
                         <button onclick="giveFreePoints('${data.name}')" style="background:#28a745; padding:5px 10px; font-size:12px; margin-bottom:5px;">+ แจก 50 แต้ม</button>
                         <button onclick="removeCustomer('${data.name}')" style="background:#dc3545; padding:5px 10px; font-size:12px; margin-left:10px;">🗑️ ลบลูกค้านี้</button>
                     `;
                 }
-            } catch (error) {
-                alert("เกิดข้อผิดพลาด");
-            }
+            } catch (error) { alert("เกิดข้อผิดพลาด"); }
         }
 
-        // ฟังก์ชันแจกแต้มฟรี
         async function giveFreePoints(name) {
             if(confirm(`ยืนยันแจกแต้มฟรี 50 แต้มให้คุณ ${name}?`)) {
                 await fetch(`${API_URL}/add_points/${encodeURIComponent(name)}/50`);
                 alert("แจกแต้มสำเร็จ!");
-                searchCustomer(); 
-                loadStats(); 
+                searchCustomer(); loadStats(); 
             }
         }
 
-        // ฟังก์ชันลบลูกค้า
         async function removeCustomer(name) {
             if(confirm(`❗ ยืนยันการลบข้อมูลทั้งหมดของคุณ ${name}? (กู้คืนไม่ได้นะ)`)) {
                 await fetch(`${API_URL}/delete_customer/${encodeURIComponent(name)}`);
@@ -154,12 +157,8 @@
             let savedPass = localStorage.getItem("kiston_auth");
             let response = await fetch(`${API_URL}/check_auth?password=${savedPass}`);
             let data = await response.json();
-
-            if (data.status === "success") {
-                loadStats();
-            } else {
-                window.location.href = "login.html";
-            }
+            if (data.status === "success") { loadStats(); } 
+            else { window.location.href = "login.html"; }
         };
     </script>
 </body>
